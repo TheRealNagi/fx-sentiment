@@ -2,6 +2,7 @@ import requests
 import time
 import os
 import json
+import base64
 from datetime import datetime, timezone
 from urllib.parse import unquote
 import gspread
@@ -52,21 +53,8 @@ def safe_int(val, default=None):
     except: return default
 
 # ══════════════════════════════════════════════════════════════
-#  GOOGLE SHEETS AUTH — service account (no browser popup)
+#  GOOGLE SHEETS AUTH — base64-encoded service account JSON
 # ══════════════════════════════════════════════════════════════
-def get_gc():
-    sa_json = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
-    sa_info = json.loads(sa_json)
-    creds   = Credentials.from_service_account_info(
-        sa_info,
-        scopes=[
-            "https://spreadsheets.google.com/feeds",
-            "https://www.googleapis.com/auth/drive",
-        ]
-    )
-    return gspread.authorize(creds)
-import base64
-
 def get_gc():
     sa_b64  = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
     sa_json = base64.b64decode(sa_b64).decode("utf-8")
@@ -79,6 +67,7 @@ def get_gc():
         ]
     )
     return gspread.authorize(creds)
+
 # ══════════════════════════════════════════════════════════════
 #  MYFXBOOK
 # ══════════════════════════════════════════════════════════════

@@ -28,12 +28,14 @@ jobs:
         run: |
           echo "Secret length: ${#GOOGLE_SERVICE_ACCOUNT_JSON}"
           echo "First 5 chars: ${GOOGLE_SERVICE_ACCOUNT_JSON:0:5}"
+          
 - name: Show file contents
         run: |
           echo "=== Python file head ==="
           head -70 fx_sentiment.py
           echo "=== Line 59 specifically ==="
           sed -n '55,65p' fx_sentiment.py
+          
       - name: Run pipeline
         env:
           MYFXBOOK_EMAIL:              ${{ secrets.MYFXBOOK_EMAIL }}

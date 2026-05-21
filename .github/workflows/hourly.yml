@@ -2,8 +2,8 @@ name: FX Sentiment Hourly
 
 on:
   schedule:
-    - cron: "0 * * * *"    # every hour at :00
-  workflow_dispatch:         # allows manual trigger
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   run-sentiment:
@@ -21,18 +21,20 @@ jobs:
 
       - name: Install dependencies
         run: pip install requests gspread google-auth
+
       - name: Verify secret exists
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
           echo "Secret length: ${#GOOGLE_SERVICE_ACCOUNT_JSON}"
           echo "First 5 chars: ${GOOGLE_SERVICE_ACCOUNT_JSON:0:5}"
+
       - name: Run pipeline
         env:
-          MYFXBOOK_EMAIL:               ${{ secrets.MYFXBOOK_EMAIL }}
-          MYFXBOOK_PASSWORD:            ${{ secrets.MYFXBOOK_PASSWORD }}
-          GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
-          TELEGRAM_TOKEN:               ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_IDS:            ${{ secrets.TELEGRAM_CHAT_IDS }}
-          GOOGLE_SERVICE_ACCOUNT_JSON:  ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MYFXBOOK_EMAIL:              ${{ secrets.MYFXBOOK_EMAIL }}
+          MYFXBOOK_PASSWORD:           ${{ secrets.MYFXBOOK_PASSWORD }}
+          GOOGLE_SHEET_ID:             ${{ secrets.GOOGLE_SHEET_ID }}
+          TELEGRAM_TOKEN:              ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_IDS:           ${{ secrets.TELEGRAM_CHAT_IDS }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: python fx_sentiment.py

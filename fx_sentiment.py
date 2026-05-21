@@ -65,7 +65,20 @@ def get_gc():
         ]
     )
     return gspread.authorize(creds)
+import base64
 
+def get_gc():
+    sa_b64  = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
+    sa_json = base64.b64decode(sa_b64).decode("utf-8")
+    sa_info = json.loads(sa_json)
+    creds   = Credentials.from_service_account_info(
+        sa_info,
+        scopes=[
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
+        ]
+    )
+    return gspread.authorize(creds)
 # ══════════════════════════════════════════════════════════════
 #  MYFXBOOK
 # ══════════════════════════════════════════════════════════════

@@ -26,7 +26,7 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
           echo "Secret length: ${#GOOGLE_SERVICE_ACCOUNT_JSON}"
-          echo "First 10 chars: ${GOOGLE_SERVICE_ACCOUNT_JSON:0:10}"
+          echo "First 5 chars: ${GOOGLE_SERVICE_ACCOUNT_JSON:0:5}"
       - name: Run pipeline
         env:
           MYFXBOOK_EMAIL:               ${{ secrets.MYFXBOOK_EMAIL }}

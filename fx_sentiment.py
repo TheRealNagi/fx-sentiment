@@ -18,9 +18,19 @@ TELEGRAM_TOKEN    = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_IDS = os.environ["TELEGRAM_CHAT_IDS"].split(",")
 
 TARGET_PAIRS = [
-    "EURUSD", "GBPUSD", "USDJPY", "AUDUSD",
-    "USDCHF", "USDCAD", "NZDUSD",
-    "EURJPY", "GBPJPY", "EURGBP",
+    # USD majors
+    "EURUSD", "GBPUSD", "USDJPY", "USDCHF",
+    "AUDUSD", "USDCAD", "NZDUSD",
+    # EUR crosses
+    "EURGBP", "EURJPY", "EURCHF", "EURAUD", "EURCAD", "EURNZD",
+    # GBP crosses
+    "GBPJPY", "GBPCHF", "GBPAUD", "GBPCAD", "GBPNZD",
+    # JPY crosses
+    "AUDJPY", "CADJPY", "CHFJPY", "NZDJPY",
+    # AUD crosses
+    "AUDCHF", "AUDCAD", "AUDNZD",
+    # CAD/NZD/CHF crosses
+    "CADCHF", "NZDCAD", "NZDCHF",
 ]
 
 BIAS_THRESHOLD = 60.0
@@ -168,10 +178,23 @@ class MyfxbookClient:
 class FrankfurterPrices:
     BASE_URL = "https://api.frankfurter.app/latest"
     PAIR_MAP = {
+        # USD majors
         "EURUSD": ("EUR","USD"), "GBPUSD": ("GBP","USD"), "USDJPY": ("USD","JPY"),
-        "AUDUSD": ("AUD","USD"), "USDCHF": ("USD","CHF"), "USDCAD": ("USD","CAD"),
-        "NZDUSD": ("NZD","USD"), "EURJPY": ("EUR","JPY"), "GBPJPY": ("GBP","JPY"),
-        "EURGBP": ("EUR","GBP"),
+        "USDCHF": ("USD","CHF"), "AUDUSD": ("AUD","USD"), "USDCAD": ("USD","CAD"),
+        "NZDUSD": ("NZD","USD"),
+        # EUR crosses
+        "EURGBP": ("EUR","GBP"), "EURJPY": ("EUR","JPY"), "EURCHF": ("EUR","CHF"),
+        "EURAUD": ("EUR","AUD"), "EURCAD": ("EUR","CAD"), "EURNZD": ("EUR","NZD"),
+        # GBP crosses
+        "GBPJPY": ("GBP","JPY"), "GBPCHF": ("GBP","CHF"), "GBPAUD": ("GBP","AUD"),
+        "GBPCAD": ("GBP","CAD"), "GBPNZD": ("GBP","NZD"),
+        # JPY crosses
+        "AUDJPY": ("AUD","JPY"), "CADJPY": ("CAD","JPY"), "CHFJPY": ("CHF","JPY"),
+        "NZDJPY": ("NZD","JPY"),
+        # AUD crosses
+        "AUDCHF": ("AUD","CHF"), "AUDCAD": ("AUD","CAD"), "AUDNZD": ("AUD","NZD"),
+        # CAD/NZD/CHF crosses
+        "CADCHF": ("CAD","CHF"), "NZDCAD": ("NZD","CAD"), "NZDCHF": ("NZD","CHF"),
     }
 
     def fetch_all(self, pairs):
@@ -262,13 +285,6 @@ def send_telegram(records, token, chat_ids):
             f"L:<code>{r['long_pct']}%</code> S:<code>{r['short_pct']}%</code> "
             f"({r['net_bias']}){price}"
         )
-
-    extremes = [r for r in records if r["net_bias"] != "NEUTRAL"]
-    if extremes:
-        lines += ["", "⚠️ <b>Contrarian Watch:</b>"]
-        for r in extremes:
-            d = "SHORT setup?" if r["net_bias"] == "LONG_HEAVY" else "LONG setup?"
-            lines.append(f"  → {r['pair']}: {r['net_bias'].replace('_',' ')} — {d}")
 
     message = "\n".join(lines)
 

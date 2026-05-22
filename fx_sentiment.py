@@ -31,6 +31,8 @@ TARGET_PAIRS = [
     "AUDCHF", "AUDCAD", "AUDNZD",
     # CAD/NZD/CHF crosses
     "CADCHF", "NZDCAD", "NZDCHF",
+    # Metals & indices
+    "XAUUSD", "US30", "SP500", "DAX",
 ]
 
 BIAS_THRESHOLD = 60.0
@@ -215,7 +217,36 @@ class FrankfurterPrices:
         found = sum(1 for v in prices.values() if v)
         print(f"✅ Prices: {found}/{len(pairs)} pairs")
         return prices
+class YahooPrices:
+    """
+    Fallback price source for non-FX symbols (gold, indices).
+    Free, no API key. Updates ~15 min delayed.
+    """
+    SYMBOL_MAP = {
+        "XAUUSD": "GC=F",      # Gold futures
+        "US30":   "^DJI",      # Dow Jones
+        "SP500":  "^GSPC",     # S&P 500
+        "DAX":    "^GDAXI",    # DAX
+    }
 
+    def fetch_all(self, symbols):
+        prices = {s: None for s in symbols}
+        try:
+            import yfinance as yf
+            for sym in symbols:
+                yahoo_sym = self.SYMBOL_MAP.get(sym)
+                if not yahoo_sym:
+                    continue
+                try:
+                    data = yf.Ticker(yahoo_sym).fast_info
+                    prices[sym] = round(float(data["last_price"]), 4)
+                except Exception as e:
+                    print(f"⚠️ Yahoo fetch failed for {sym}: {e}")
+            found = sum(1 for v in prices.values() if v)
+            print(f"✅ Yahoo prices: {found}/{len(symbols)} symbols")
+        except ImportError:
+            print("⚠️ yfinance not installed — skipping Yahoo prices")
+        return prices
 # ══════════════════════════════════════════════════════════════
 #  GOOGLE SHEETS
 # ══════════════════════════════════════════════════════════════
@@ -321,7 +352,14 @@ def run_pipeline():
         print("❌ No records — aborting")
         return
 
+    # Frankfurter for FX
     prices = FrankfurterPrices().fetch_all(TARGET_PAIRS)
+    
+    # Yahoo for gold + indices
+    non_fx_symbols = ["XAUUSD", "US30", "SP500", "DAX"]
+    yahoo_prices   = YahooPrices().fetch_all(non_fx_symbols)
+    prices.update(yahoo_prices)
+
     for r in records:
         r["mid_price"] = prices.get(r["pair"])
 

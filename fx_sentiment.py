@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote
 import gspread
 from google.oauth2.service_account import Credentials
+from time import sleep
 
 # ══════════════════════════════════════════════════════════════
 #  CONFIGURATION — reads from GitHub Secrets (env variables)
@@ -270,31 +271,51 @@ class SheetsManager:
             print("  ✅ History header written")
         return ws
 
-    def write_dashboard(self, records):
+def write_dashboard(self, records):
         ws = self._get_or_create("Dashboard", rows=100, cols=20)
         ws.clear()
-        ws.append_row([f"FX Sentiment Dashboard — {now_utc()}"])
-        ws.append_row([])
-        ws.append_row(SCHEMA_COLS)
+
+        # Build all rows in memory first
+        all_rows = [
+            [f"FX Sentiment Dashboard — {now_utc()}"],
+            [],
+            SCHEMA_COLS,
+        ]
         for r in sorted(records, key=lambda x: x["pair"]):
-            ws.append_row([str(r.get(c, "") or "") for c in SCHEMA_COLS])
-        ws.append_row([])
-        ws.append_row(["⚠️ Contrarian Watch"])
+            all_rows.append([str(r.get(c, "") or "") for c in SCHEMA_COLS])
+
+        all_rows.append([])
+        all_rows.append(["⚠️ Contrarian Watch"])
         extremes = [r for r in records if r["net_bias"] != "NEUTRAL"]
         if extremes:
             for r in extremes:
                 d = "SHORT setup?" if r["net_bias"] == "LONG_HEAVY" else "LONG setup?"
-                ws.append_row([r["pair"], r["net_bias"],
-                               f"L:{r['long_pct']}% S:{r['short_pct']}%", d])
+                all_rows.append([
+                    r["pair"], r["net_bias"],
+                    f"L:{r['long_pct']}% S:{r['short_pct']}%", d
+                ])
         else:
-            ws.append_row(["All pairs neutral"])
-        print("✅ Dashboard updated")
+            all_rows.append(["All pairs neutral"])
 
-    def append_history(self, records):
+        # ONE single batch write instead of 40+ individual append_row calls
+        ws.update(values=all_rows, range_name="A1", value_input_option="USER_ENTERED")
+        print("✅ Dashboard updated (batch)")
+
+   def append_history(self, records):
         ws   = self.ensure_history_header()
         rows = [[str(r.get(c, "") or "") for c in SCHEMA_COLS] for r in records]
-        ws.append_rows(rows, value_input_option="USER_ENTERED")
-        print(f"✅ History: {len(rows)} rows appended")
+        
+        for attempt in range(3):
+            try:
+                ws.append_rows(rows, value_input_option="USER_ENTERED")
+                print(f"✅ History: {len(rows)} rows appended")
+                return
+            except Exception as e:
+                if "429" in str(e) and attempt < 2:
+                    print(f"⚠️ Rate limited, retrying in 30s (attempt {attempt+1}/3)")
+                    sleep(30)
+                else:
+                    raise
 
 # ══════════════════════════════════════════════════════════════
 #  TELEGRAM

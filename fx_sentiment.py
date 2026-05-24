@@ -275,7 +275,6 @@ def write_dashboard(self, records):
         ws = self._get_or_create("Dashboard", rows=100, cols=20)
         ws.clear()
 
-        # Build all rows in memory first
         all_rows = [
             [f"FX Sentiment Dashboard — {now_utc()}"],
             [],
@@ -297,14 +296,13 @@ def write_dashboard(self, records):
         else:
             all_rows.append(["All pairs neutral"])
 
-        # ONE single batch write instead of 40+ individual append_row calls
         ws.update(values=all_rows, range_name="A1", value_input_option="USER_ENTERED")
         print("✅ Dashboard updated (batch)")
 
-   def append_history(self, records):
+    def append_history(self, records):
         ws   = self.ensure_history_header()
         rows = [[str(r.get(c, "") or "") for c in SCHEMA_COLS] for r in records]
-        
+
         for attempt in range(3):
             try:
                 ws.append_rows(rows, value_input_option="USER_ENTERED")
